@@ -1,0 +1,55 @@
+name: Auto UPM Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Assets/Deepwave/WaveCore/**' # Chỉ chạy khi có thay đổi trong thư mục package
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Cấp quyền đẩy nhánh, tạo tag và tạo release
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Bắt buộc để git subtree đọc được toàn bộ lịch sử
+
+      - name: Config Git Bot
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Split and Push UPM Branch
+        run: |
+          git subtree split --prefix="Assets/Deepwave/WaveCore" -b upm
+          git push -f origin upm:upm
+
+      - name: Create Tag and GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(jq -r .version Assets/Deepwave/WaveCore/package.json)
+          TAG="v$VERSION"
+          
+          # Kiểm tra xem tag đã tồn tại trên remote chưa
+          if git ls-remote --tags origin | grep -q "refs/tags/$TAG"; then
+            echo "Tag $TAG đã tồn tại. Bỏ qua bước phát hành."
+            exit 0
+          fi
+          
+          echo "Đang tạo Tag $TAG cho nhánh upm..."
+          git tag $TAG upm
+          git push origin $TAG
+          
+          echo "Đang tạo GitHub Release..."
+          # --generate-notes tự động lấy các commit message làm nội dung release
+          gh release create $TAG \
+            --title "WaveCore $TAG" \
+            --generate-notes \
+            --target upm
