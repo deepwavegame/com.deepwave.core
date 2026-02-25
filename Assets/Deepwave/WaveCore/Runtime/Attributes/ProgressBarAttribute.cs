@@ -2,7 +2,6 @@ using UnityEngine;
 
 namespace Deepwave.Core
 {
-    // Tạo một cái thẻ mới tên là [ProgressBar]
     public class ProgressBarAttribute : PropertyAttribute
     {
         public float min;

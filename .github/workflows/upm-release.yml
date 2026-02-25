@@ -5,20 +5,20 @@ on:
     branches:
       - main
     paths:
-      - 'Assets/Deepwave/WaveCore/**' # Chỉ chạy khi có thay đổi trong thư mục package
+      - 'Assets/Deepwave/WaveCore/**'
   workflow_dispatch:
 
 jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Cấp quyền đẩy nhánh, tạo tag và tạo release
+      contents: write
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Bắt buộc để git subtree đọc được toàn bộ lịch sử
+          fetch-depth: 0
 
       - name: Config Git Bot
         run: |
@@ -30,26 +30,70 @@ jobs:
           git subtree split --prefix="Assets/Deepwave/WaveCore" -b upm
           git push -f origin upm:upm
 
+      - name: Export Unity Package
+        uses: pCYSlv8n/UnityPackageExporter@v1
+        with:
+          package_name: 'TempPackage'
+          include_files: 'Assets/Deepwave/WaveCore'
+
       - name: Create Tag and GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VERSION=$(jq -r .version Assets/Deepwave/WaveCore/package.json)
+          PATH_JSON="Assets/Deepwave/WaveCore/package.json"
+          VERSION=$(jq -r .version $PATH_JSON)
+          PACKAGE_ID=$(jq -r .name $PATH_JSON)
           TAG="v$VERSION"
           
-          # Kiểm tra xem tag đã tồn tại trên remote chưa
+          FINAL_PACKAGE_NAME="${PACKAGE_ID}_v${VERSION}.unitypackage"
+          mv TempPackage.unitypackage "$FINAL_PACKAGE_NAME"
+          
           if git ls-remote --tags origin | grep -q "refs/tags/$TAG"; then
-            echo "Tag $TAG đã tồn tại. Bỏ qua bước phát hành."
+            echo "Tag $TAG đã tồn tại. Bỏ qua."
             exit 0
           fi
           
-          echo "Đang tạo Tag $TAG cho nhánh upm..."
           git tag $TAG upm
           git push origin $TAG
-          
-          echo "Đang tạo GitHub Release..."
-          # --generate-notes tự động lấy các commit message làm nội dung release
-          gh release create $TAG \
+
+          # --- LOGIC LỌC VÀ ĐỊNH DẠNG CHANGELOG ---
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 $TAG^ 2>/dev/null || echo "")
+          RANGE=$([ -z "$PREVIOUS_TAG" ] && echo "main" || echo "$PREVIOUS_TAG..main")
+
+          # Hàm để lọc và làm đẹp nội dung
+          format_log() {
+            local prefix=$1
+            local title=$2
+            # Lấy log -> lọc theo prefix -> xóa prefix và dấu : -> in ra list
+            local logs=$(git log $RANGE --pretty=format:"* %s (%h)" -- Assets/Deepwave/WaveCore | \
+                         grep -iE "^\* $prefix:" | \
+                         sed -E "s/^\* $prefix:[[:space:]]*/- /I")
+            
+            if [ ! -z "$logs" ]; then
+              echo -e "### $title\n$logs\n"
+            fi
+          }
+
+          # Xây dựng nội dung CHANGELOG theo từng mục
+          BODY=""
+          BODY+="$(format_log "feat" "Features")"
+          BODY+="$(format_log "update" "Updates")"
+          BODY+="$(format_log "fix" "Bug Fixes")"
+          BODY+="$(format_log "clear" "Clean Up")"
+          BODY+="$(format_log "refactor" "Refactors")"
+          BODY+="$(format_log "perf" "Performance")"
+          BODY+="$(format_log "docs" "Documentation")"
+          BODY+="$(format_log "chore" "Maintenance")"
+
+          if [ -z "$BODY" ]; then
+            BODY="* No significant changes listed."
+          fi
+
+          echo "--- Changelog Preview ---"
+          echo -e "$BODY"
+
+          # Tạo Release
+          printf "## What's Changed trong $PACKAGE_ID\n\n$BODY" | gh release create $TAG "$FINAL_PACKAGE_NAME" \
             --title "WaveCore $TAG" \
-            --generate-notes \
+            --notes-file - \
             --target upm
