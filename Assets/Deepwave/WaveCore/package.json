@@ -1,6 +1,6 @@
 {
     "name": "com.deepwave.core",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "displayName": "Deepwave Core",
     "description": "Contains shared source code, mathematical utilities, and design patterns.",
     "unity": "2021.3",
