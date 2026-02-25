@@ -30,11 +30,35 @@ jobs:
           git subtree split --prefix="Assets/Deepwave/WaveCore" -b upm
           git push -f origin upm:upm
 
-      - name: Export Unity Package
-        uses: pCYSlv8n/UnityPackageExporter@v1
-        with:
-          package_name: 'TempPackage'
-          include_files: 'Assets/Deepwave/WaveCore'
+      # Tự động đóng gói .unitypackage không cần dùng Action bên thứ 3
+      - name: Export Unity Package Natively
+        run: |
+          PACKAGE_DIR="Assets/Deepwave/WaveCore"
+          TEMP_DIR="temp_package"
+          mkdir -p $TEMP_DIR
+          
+          # Quét tất cả file .meta để tái tạo cấu trúc thư mục guid
+          find "$PACKAGE_DIR" -name "*.meta" | while read -r meta_file; do
+            asset_file="${meta_file%.meta}" # Đường dẫn file gốc
+            guid=$(grep "^guid:" "$meta_file" | awk '{print $2}' | tr -d '\r')
+            
+            if [ -n "$guid" ]; then
+              mkdir -p "$TEMP_DIR/$guid"
+              cp "$meta_file" "$TEMP_DIR/$guid/asset.meta"
+              echo "$asset_file" > "$TEMP_DIR/$guid/pathname"
+              
+              # Nếu là file (không phải thư mục), copy nội dung asset vào
+              if [ -f "$asset_file" ]; then
+                cp "$asset_file" "$TEMP_DIR/$guid/asset"
+              fi
+            fi
+          done
+          
+          # Nén thành định dạng .unitypackage (thực chất là tar.gz)
+          cd $TEMP_DIR
+          tar -zcf ../TempPackage.unitypackage *
+          cd ..
+          rm -rf $TEMP_DIR
 
       - name: Create Tag and GitHub Release
         env:
@@ -60,11 +84,9 @@ jobs:
           PREVIOUS_TAG=$(git describe --tags --abbrev=0 $TAG^ 2>/dev/null || echo "")
           RANGE=$([ -z "$PREVIOUS_TAG" ] && echo "main" || echo "$PREVIOUS_TAG..main")
 
-          # Hàm để lọc và làm đẹp nội dung
           format_log() {
             local prefix=$1
             local title=$2
-            # Lấy log -> lọc theo prefix -> xóa prefix và dấu : -> in ra list
             local logs=$(git log $RANGE --pretty=format:"* %s (%h)" -- Assets/Deepwave/WaveCore | \
                          grep -iE "^\* $prefix:" | \
                          sed -E "s/^\* $prefix:[[:space:]]*/- /I")
@@ -74,7 +96,6 @@ jobs:
             fi
           }
 
-          # Xây dựng nội dung CHANGELOG theo từng mục
           BODY=""
           BODY+="$(format_log "feat" "Features")"
           BODY+="$(format_log "update" "Updates")"
