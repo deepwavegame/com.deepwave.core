@@ -1,57 +1,86 @@
+using System;
 using UnityEditor;
 using UnityEngine;
 
 namespace Deepwave.Core.Editor
 {
-    [CustomPropertyDrawer(typeof(Vector2RangeAttribute))]
+    [CustomPropertyDrawer(typeof(Vector2Range))]
+    [CustomPropertyDrawer(typeof(Vector2IntRange))]
     public class Vector2RangeDrawer : PropertyDrawer
     {
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             EditorGUI.BeginProperty(position, label, property);
 
-            // Lấy Vector2RangeAttribute
-            Vector2RangeAttribute range = attribute as Vector2RangeAttribute;
+            // Vẽ nhãn prefix và lấy vùng không gian còn lại cho slider
+            position = EditorGUI.PrefixLabel(position, GUIUtility.GetControlID(FocusType.Passive), label);
 
-            // Lấy giá trị Vector2 từ VolumeParameter
-            SerializedProperty valueProp = property.FindPropertyRelative("m_Value");
-            if (valueProp == null)
+            float minLimit = 0f;
+            float maxLimit = 1f;
+
+            // Đọc giới hạn mặc định nếu Vector2Range được sử dụng độc lập với Attribute
+            if (fieldInfo != null)
             {
-                Debug.LogError("Vector2RangeDrawer: Could not find m_Value in Vector2Parameter");
-                return;
+                var attrs = fieldInfo.GetCustomAttributes(typeof(DynamicRangeAttribute), true);
+                if (attrs.Length > 0 && attrs[0] is DynamicRangeAttribute rangeAttr)
+                {
+                    minLimit = rangeAttr.Min;
+                    maxLimit = rangeAttr.Max;
+                }
             }
 
-            Vector2 currentValue = valueProp.vector2Value;
-
-            float labelWidth = EditorGUIUtility.labelWidth;
-            float fieldHeight = EditorGUIUtility.singleLineHeight;
-            float spacing = 2f;
-
-            // Vẽ nhãn
-            Rect labelRect = new Rect(position.x, position.y, labelWidth, fieldHeight);
-            EditorGUI.LabelField(labelRect, label);
-
-            // Vẽ slider cho X
-            Rect xLabelRect = new Rect(position.x + labelWidth, position.y, 20, fieldHeight);
-            EditorGUI.LabelField(xLabelRect, "X");
-            Rect xSliderRect = new Rect(position.x + labelWidth + 20, position.y, position.width - labelWidth - 20, fieldHeight);
-            currentValue.x = EditorGUI.Slider(xSliderRect, currentValue.x, range.min, range.max);
-
-            // Vẽ slider cho Y
-            Rect yLabelRect = new Rect(position.x + labelWidth, position.y + fieldHeight + spacing, 20, fieldHeight);
-            EditorGUI.LabelField(yLabelRect, "Y");
-            Rect ySliderRect = new Rect(position.x + labelWidth + 20, position.y + fieldHeight + spacing, position.width - labelWidth - 20, fieldHeight);
-            currentValue.y = EditorGUI.Slider(ySliderRect, currentValue.y, range.min, range.max);
-
-            // Cập nhật giá trị
-            valueProp.vector2Value = currentValue;
+            bool isFloat = property.type == nameof(Vector2Range);
+            DrawUI(position, property, minLimit, maxLimit, isFloat);
 
             EditorGUI.EndProperty();
         }
 
-        public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+        // Tách hàm tĩnh để chia sẻ logic vẽ giao diện mà không cần khởi tạo Drawer
+        public static void DrawUI(Rect rect, SerializedProperty property, float minLimit, float maxLimit, bool isFloat)
         {
-            return EditorGUIUtility.singleLineHeight * 2 + 2; // 2 dòng cho X và Y, cộng khoảng cách
+            SerializedProperty minProp = property.FindPropertyRelative("min");
+            SerializedProperty maxProp = property.FindPropertyRelative("max");
+
+            float fieldWidth = 40f;
+            float spacing = 5f;
+            float sliderWidth = rect.width - (fieldWidth * 2) - (spacing * 2);
+
+            Rect minRect = new(rect.x, rect.y, fieldWidth, rect.height);
+            Rect sliderRect = new(minRect.xMax + spacing, rect.y, sliderWidth, rect.height);
+            Rect maxRect = new(sliderRect.xMax + spacing, rect.y, fieldWidth, rect.height);
+
+            if (isFloat)
+            {
+                float minVal = minProp.floatValue;
+                float maxVal = maxProp.floatValue;
+
+                minVal = EditorGUI.FloatField(minRect, (float)Math.Round(minVal, 2));
+                EditorGUI.MinMaxSlider(sliderRect, ref minVal, ref maxVal, minLimit, maxLimit);
+                maxVal = EditorGUI.FloatField(maxRect, (float)Math.Round(maxVal, 2));
+
+                minProp.floatValue = minVal;
+                maxProp.floatValue = maxVal;
+            }
+            else
+            {
+                int minVal = minProp.intValue;
+                int maxVal = maxProp.intValue;
+
+                minVal = EditorGUI.IntField(minRect, minVal);
+
+                float minFloat = minVal;
+                float maxFloat = maxVal;
+                EditorGUI.MinMaxSlider(sliderRect, ref minFloat, ref maxFloat, minLimit, maxLimit);
+
+                maxVal = EditorGUI.IntField(maxRect, Mathf.RoundToInt(maxFloat));
+
+                // Khóa giá trị int không vượt giới hạn và không lặp chéo
+                minVal = Mathf.Clamp(Mathf.RoundToInt(minFloat), (int)minLimit, maxVal);
+                maxVal = Mathf.Clamp(maxVal, minVal, (int)maxLimit);
+
+                minProp.intValue = minVal;
+                maxProp.intValue = maxVal;
+            }
         }
     }
 }
