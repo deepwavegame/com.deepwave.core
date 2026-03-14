@@ -7,9 +7,8 @@ namespace Deepwave.Core
     {
         public float Min;
         public float Max;
-        public string DynamicMaxList; // Tên biến List để lấy Count làm Max
+        public string DynamicMaxList;
 
-        // Constructor cũ
         public DynamicRangeAttribute(float min, float max)
         {
             Min = min;
@@ -17,44 +16,67 @@ namespace Deepwave.Core
             DynamicMaxList = null;
         }
 
-        // Constructor mới hỗ trợ Dynamic Max
         public DynamicRangeAttribute(float min, string dynamicMaxList)
         {
             Min = min;
-            Max = 1f; // Giá trị tạm, sẽ bị ghi đè trong Drawer
+            Max = 1f;
             DynamicMaxList = dynamicMaxList;
         }
     }
 
-    // 2. Struct chứa dữ liệu cho số thực (Float)
+    // Tách biệt cấu trúc dữ liệu giới hạn đầu cuối
+    [Serializable]
+    public struct Vector2Range
+    {
+        public float min;
+        public float max;
+
+        public Vector2Range(float min, float max)
+        {
+            this.min = min;
+            this.max = max;
+        }
+    }
+
+    [Serializable]
+    public struct Vector2IntRange
+    {
+        public int min;
+        public int max;
+
+        public Vector2IntRange(int min, int max)
+        {
+            this.min = min;
+            this.max = max;
+        }
+    }
+
     [Serializable]
     public struct DynamicFloat
     {
         public bool randomize;
         public float value;
-        public Vector2 range; // x=min, y=max
+        public Vector2Range range; // Áp dụng kiểu dữ liệu Range mới
 
-        // Constructor tiện ích
         public static DynamicFloat Default(float val) => new()
         {
             value = val,
-            range = new(val, val),
+            range = new Vector2Range(val, val),
             randomize = false
         };
     }
 
-    // 3. Struct chứa dữ liệu cho số nguyên (Int)
     [Serializable]
     public struct DynamicInt
     {
         public bool randomize;
         public int value;
-        public Vector2Int range; // x=min, y=max
+        public Vector2IntRange range; // Áp dụng kiểu dữ liệu Range mới
 
         public static DynamicInt Default(int val) => new()
         {
             value = val,
-            range = new(val, val),
+            range = new Vector2IntRange(val, val),
             randomize = false
         };
     }
