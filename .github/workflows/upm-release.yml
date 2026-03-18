@@ -97,14 +97,14 @@ jobs:
           }
 
           BODY=""
-          BODY+="$(format_log "feat" "Features")"
-          BODY+="$(format_log "update" "Updates")"
-          BODY+="$(format_log "fix" "Bug Fixes")"
-          BODY+="$(format_log "clear" "Clean Up")"
-          BODY+="$(format_log "refactor" "Refactors")"
-          BODY+="$(format_log "perf" "Performance")"
-          BODY+="$(format_log "docs" "Documentation")"
-          BODY+="$(format_log "chore" "Maintenance")"
+          BODY+="$(format_log "feat" "Features")"$'\n'
+          BODY+="$(format_log "update" "Updates")"$'\n'
+          BODY+="$(format_log "fix" "Bug Fixes")"$'\n'
+          BODY+="$(format_log "clear" "Clean Up")"$'\n'
+          BODY+="$(format_log "refactor" "Refactors")"$'\n'
+          BODY+="$(format_log "perf" "Performance")"$'\n'
+          BODY+="$(format_log "docs" "Documentation")"$'\n'
+          BODY+="$(format_log "chore" "Maintenance")"$'\n'
 
           if [ -z "$BODY" ]; then
             BODY="* No significant changes listed."
