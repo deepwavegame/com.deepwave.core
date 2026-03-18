@@ -1,5 +1,5 @@
-using UnityEngine;
 using System;
+using UnityEngine;
 
 namespace Deepwave.Core
 {
@@ -56,7 +56,7 @@ namespace Deepwave.Core
     {
         public bool randomize;
         public float value;
-        public Vector2Range range; // Áp dụng kiểu dữ liệu Range mới
+        public Vector2Range range;
 
         public static DynamicFloat Default(float val) => new()
         {
@@ -64,6 +64,11 @@ namespace Deepwave.Core
             range = new Vector2Range(val, val),
             randomize = false
         };
+
+        public readonly float Evaluate()
+        {
+            return randomize ? UnityEngine.Random.Range(range.min, range.max) : value;
+        }
     }
 
     [Serializable]
@@ -71,7 +76,7 @@ namespace Deepwave.Core
     {
         public bool randomize;
         public int value;
-        public Vector2IntRange range; // Áp dụng kiểu dữ liệu Range mới
+        public Vector2IntRange range;
 
         public static DynamicInt Default(int val) => new()
         {
@@ -79,5 +84,10 @@ namespace Deepwave.Core
             range = new Vector2IntRange(val, val),
             randomize = false
         };
+
+        public readonly float Evaluate()
+        {
+            return randomize ? UnityEngine.Random.Range(range.min, range.max) : value;
+        }
     }
 }
