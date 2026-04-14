@@ -7,40 +7,39 @@ using UnityEditor;
 namespace Deepwave.Core
 {
     /// <summary>
-    /// Generic Singleton class cho các thành phần MonoBehaviour.
-    /// Đảm bảo chỉ có một instance duy nhất và tồn tại qua các scene.
+    /// Generic Singleton for MonoBehaviour components.
+    /// Ensures that only one instance exists in the scene and optionally persists across scenes.
     /// </summary>
-    /// <typeparam name="T">Kiểu của thành phần MonoBehaviour.</typeparam>
+    /// <typeparam name="T">The type of the MonoBehaviour component.</typeparam>
     [DisallowMultipleComponent]
-    public class SingletonBehaviour<T> : MonoBehaviour where T : MonoBehaviour
+    public abstract class SingletonBehaviour<T> : MonoBehaviour where T : MonoBehaviour
     {
+        // ── Constants & Static ────────────────────────────────────────────
         private static T _instance;
         private static readonly object _lock = new();
-        private static bool _applicationIsQuitting;
+        private static bool _isQuitting;
 
-        /// <summary>
-        /// Lấy instance singleton. Ném ngoại lệ nếu không tìm thấy instance.
-        /// </summary>
+        // ── Properties ────────────────────────────────────────────────────
+        /// <summary>Gets the unique instance of this singleton. Logs a warning if accessed after the application quits.</summary>
         public static T Instance
         {
             get
             {
                 lock (_lock)
                 {
-                    if (_applicationIsQuitting)
+                    if (_isQuitting)
                     {
-                        Debug.LogWarning($"[Singleton] Instance của {typeof(T).Name} đã bị hủy. Trả về null.");
+                        Debug.LogWarning($"[SingletonBehaviour] Requested {typeof(T).Name} after application quit. Returning null.");
                         return null;
                     }
 
                     if (_instance == null)
                     {
-                        // Tìm instance hiện có
                         _instance = FindAnyObjectByType<T>();
 
                         if (_instance == null)
                         {
-                            throw new MissingReferenceException($"[Singleton] Không tìm thấy instance của {typeof(T).Name} trong scene. Hãy thêm thủ công.");
+                            throw new MissingReferenceException($"[SingletonBehaviour] No instance of {typeof(T).Name} found in the scene.");
                         }
                     }
 
@@ -49,11 +48,10 @@ namespace Deepwave.Core
             }
         }
 
-        /// <summary>
-        /// Kiểm tra xem instance singleton có tồn tại không mà không khởi tạo.
-        /// </summary>
+        /// <summary>Returns true if an instance of the singleton currently exists in the memory or the scene.</summary>
         public static bool HasInstance => _instance != null || FindAnyObjectByType<T>() != null;
 
+        // ── Unity Lifecycle ───────────────────────────────────────────────
         protected virtual void Awake()
         {
             lock (_lock)
@@ -65,31 +63,37 @@ namespace Deepwave.Core
                 }
 
                 _instance = this as T;
+                _isQuitting = false; // Reset state if re-instantiated (e.g., scene reload)
             }
 
-            OnAwake();
+            OnInitialized();
+        }
+
+        protected virtual void OnEnable()
+        {
+            _isQuitting = false;
         }
 
         protected virtual void OnDestroy()
         {
             if (_instance == this)
             {
-                _applicationIsQuitting = true;
+                _isQuitting = true;
             }
         }
 
-        /// <summary>
-        /// Ghi đè phương thức này để thêm logic khởi tạo tùy chỉnh trong các lớp dẫn xuất.
-        /// </summary>
-        protected virtual void OnAwake() { }
+        // ── Public API (Events / Initialization) ─────────────────────────
+        /// <summary>Called when the singleton is initialized during Awake. Override for custom initialization logic.</summary>
+        protected virtual void OnInitialized() { }
 
 #if UNITY_EDITOR
+        // ── Editor-Only ───────────────────────────────────────────────────
         protected virtual void Reset()
         {
             var instances = FindObjectsByType<T>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             if (instances.Length > 1)
             {
-                EditorUtility.DisplayDialog("Singleton Error", $"Chỉ được phép có một instance của {typeof(T).Name} trong scene!", "OK");
+                EditorUtility.DisplayDialog("Singleton Conflict", $"Only one instance of {typeof(T).Name} is allowed in the scene.", "OK");
                 DestroyImmediate(this);
             }
         }

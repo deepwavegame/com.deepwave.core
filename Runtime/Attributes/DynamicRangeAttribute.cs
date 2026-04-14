@@ -1,14 +1,23 @@
-using System;
 using UnityEngine;
 
 namespace Deepwave.Core
 {
-    public class DynamicRangeAttribute : PropertyAttribute
+    /// <summary>
+    /// Use this attribute on a float or DynamicFloat field to visualize it with a min/max slider in the Inspector.
+    /// Supports dynamic adjustment of the maximum value if a list name is provided.
+    /// </summary>
+    public sealed class DynamicRangeAttribute : PropertyAttribute
     {
+        // ── Public Fields ─────────────────────────────────────────────────
+        /// <summary>Lower bound of the range.</summary>
         public float Min;
+        /// <summary>Upper bound of the range.</summary>
         public float Max;
+        /// <summary>Optional property name containing a collection of values to derive a dynamic maximum from.</summary>
         public string DynamicMaxList;
 
+        // ── Constructors ─────────────────────────────────────────────────
+        /// <summary>Defines a fixed range with specific min and max values.</summary>
         public DynamicRangeAttribute(float min, float max)
         {
             Min = min;
@@ -16,78 +25,12 @@ namespace Deepwave.Core
             DynamicMaxList = null;
         }
 
+        /// <summary>Defines a range where the maximum value depends on another collection's size.</summary>
         public DynamicRangeAttribute(float min, string dynamicMaxList)
         {
             Min = min;
             Max = 1f;
             DynamicMaxList = dynamicMaxList;
-        }
-    }
-
-    // Tách biệt cấu trúc dữ liệu giới hạn đầu cuối
-    [Serializable]
-    public struct Vector2Range
-    {
-        public float min;
-        public float max;
-
-        public Vector2Range(float min, float max)
-        {
-            this.min = min;
-            this.max = max;
-        }
-    }
-
-    [Serializable]
-    public struct Vector2IntRange
-    {
-        public int min;
-        public int max;
-
-        public Vector2IntRange(int min, int max)
-        {
-            this.min = min;
-            this.max = max;
-        }
-    }
-
-    [Serializable]
-    public struct DynamicFloat
-    {
-        public bool randomize;
-        public float value;
-        public Vector2Range range;
-
-        public static DynamicFloat Default(float val) => new()
-        {
-            value = val,
-            range = new Vector2Range(val, val),
-            randomize = false
-        };
-
-        public readonly float Evaluate()
-        {
-            return randomize ? UnityEngine.Random.Range(range.min, range.max) : value;
-        }
-    }
-
-    [Serializable]
-    public struct DynamicInt
-    {
-        public bool randomize;
-        public int value;
-        public Vector2IntRange range;
-
-        public static DynamicInt Default(int val) => new()
-        {
-            value = val,
-            range = new Vector2IntRange(val, val),
-            randomize = false
-        };
-
-        public readonly float Evaluate()
-        {
-            return randomize ? UnityEngine.Random.Range(range.min, range.max) : value;
         }
     }
 }
