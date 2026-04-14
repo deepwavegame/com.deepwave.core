@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-04-14
+### Changed
+- Unified `DynamicFloat` and `DynamicInt` into a single, specialized `DynamicValue` type.
+- Consolidated `Vector2IntRange` into `Vector2Range` with added integer constructor support.
+- Updated `Vector2RangeDrawer` and `DynamicValueDrawer` to handle float-based integer emulation in the Inspector.
+- Updated all documentation and tests to reflect unified data types.
+
 ## [1.1.0] - 2026-04-14
 ### Added
 - New Engineering & Coding Standards 2.0 (`GEMINI.md`).
