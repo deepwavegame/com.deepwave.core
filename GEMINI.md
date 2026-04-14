@@ -20,7 +20,7 @@ com.deepwave.core/
 │   ├── Deepwave.Core.Runtime.asmdef
 │   ├── Abstractions/          # Shared interfaces (ISingleton, IInterpolatable)
 │   ├── Attributes/            # Custom Inspector attributes (InspectorHeader, DynamicRange)
-│   ├── Data/                  # Dynamic types and structs (DynamicFloat, DynamicInt)
+│   ├── Data/                  # Dynamic types and structs (DynamicValue, Vector2Range)
 │   ├── Singleton/             # Singleton design patterns (Singleton, SingletonBehaviour)
 │   └── Utilities/             # High-performance math and system helpers (MathUtils, GuidUtility)
 ├── Editor/                    # Editor-only scripts (Custom drawers for core features)
@@ -56,16 +56,16 @@ Core logic must be robust, as it serves as the foundation for other packages.
 
 ```csharp
 // Example of Industrial Standard Core Utility
-public struct DynamicFloat
+public struct DynamicValue
 {
     [SerializeField] private float _value;
-    [SerializeField] private Vector2 _range;
-    [SerializeField] private bool _useRange;
+    [SerializeField] private Vector2Range _range;
+    [SerializeField] private bool _randomize;
 
     /// <summary>Returns either the fixed value or a random value within the specified range.</summary>
     public float Evaluate()
     {
-        return _useRange ? Random.Range(_range.x, _range.y) : _value;
+        return _randomize ? Random.Range(_range.min, _range.max) : _value;
     }
 }
 ```

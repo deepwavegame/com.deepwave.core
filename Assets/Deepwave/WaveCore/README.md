@@ -26,8 +26,7 @@ Provides safe and efficient Singleton implementations:
 
 ### 3. Dynamic Types
 Flexible data structures that allow switching between fixed values and randomized ranges:
-- `DynamicFloat`: A struct containing a fixed value and a `Vector2Range`. Use `.Evaluate()` to retrieve either the fixed value or a random value within the range.
-- `DynamicInt`: Similar to `DynamicFloat`, but designed for integers.
+- `DynamicValue`: A struct containing a fixed value and a `Vector2Range`. Use `.Evaluate()` to retrieve either the fixed value or a random value within the range. Handles both float and integer use cases.
 
 ### 4. Math Utilities (`MathUtils`)
 An extensive math library with useful functions:
@@ -54,7 +53,7 @@ public class PlayerController : MonoBehaviour
     [DynamicRange(0, 100)]
     public float speed;
     
-    public DynamicFloat jumpForce;
+    public DynamicValue jumpForce;
 
     void Update() 
     {
