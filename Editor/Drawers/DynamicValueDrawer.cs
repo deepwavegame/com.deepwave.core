@@ -4,21 +4,14 @@ using UnityEngine;
 namespace Deepwave.Core.Editor
 {
     /// <summary>
-    /// Custom PropertyDrawer for DynamicFloat and DynamicInt types.
+    /// Custom PropertyDrawer for DynamicValue type.
     /// Manages the layout for switching between a single value slider and a min/max range slider.
     /// </summary>
-    [CustomPropertyDrawer(typeof(DynamicFloat))]
-    [CustomPropertyDrawer(typeof(DynamicInt))]
+    [CustomPropertyDrawer(typeof(DynamicValue))]
     public sealed class DynamicValueDrawer : PropertyDrawer
     {
         // ── Constants ─────────────────────────────────────────────────────
         private const float ToggleWidth = 82.5f;
-
-        // ── Private Fields ────────────────────────────────────────────────
-        private bool _isInitialized;
-        private float _minLimit = 0f;
-        private float _maxLimit = 1f;
-        private DynamicRangeAttribute _rangeAttr;
 
         // ── PropertyDrawer Overrides ──────────────────────────────────────
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
@@ -28,13 +21,31 @@ namespace Deepwave.Core.Editor
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            InitializeAttributeData();
-
-            EditorGUI.BeginProperty(position, label, property);
-
             var randomizeProp = property.FindPropertyRelative("_randomize");
             var valueProp = property.FindPropertyRelative("_value");
             var rangeProp = property.FindPropertyRelative("_range");
+            var isIntegerProp = property.FindPropertyRelative("_isInteger");
+            var minLimitProp = property.FindPropertyRelative("_minLimit");
+            var maxLimitProp = property.FindPropertyRelative("_maxLimit");
+
+            // Base limits from the struct itself
+            float minLimit = minLimitProp != null ? minLimitProp.floatValue : 0f;
+            float maxLimit = maxLimitProp != null ? maxLimitProp.floatValue : 100f;
+            DynamicRangeAttribute rangeAttr = null;
+
+            if (fieldInfo != null)
+            {
+                var attributes = fieldInfo.GetCustomAttributes(typeof(DynamicRangeAttribute), true);
+                if (attributes.Length > 0 && attributes[0] is DynamicRangeAttribute attr)
+                {
+                    rangeAttr = attr;
+                    // Attribute explicitly overrides internal struct limits
+                    minLimit = attr.Min;
+                    maxLimit = attr.Max;
+                }
+            }
+
+            EditorGUI.BeginProperty(position, label, property);
 
             float lineHeight = EditorGUIUtility.singleLineHeight;
             float spacing = EditorGUIUtility.standardVerticalSpacing;
@@ -51,66 +62,50 @@ namespace Deepwave.Core.Editor
             randomizeProp.boolValue = EditorGUI.ToggleLeft(toggleRect, "Randomize", randomizeProp.boolValue);
 
             // Dynamic Max Limit evaluation
-            float currentMax = GetDynamicMax(property, _maxLimit);
+            float currentMaxLimit = GetDynamicMax(property, maxLimit, minLimit, rangeAttr);
 
             // Draw Content
             Rect indentedContentRect = EditorGUI.IndentedRect(contentRect);
-            bool isFloat = valueProp.propertyType == SerializedPropertyType.Float;
+
+            bool isFloat = isIntegerProp == null || !isIntegerProp.boolValue;
+            if (rangeAttr != null)
+            {
+                isFloat = !rangeAttr.IsInteger;
+            }
 
             if (randomizeProp.boolValue)
             {
-                Vector2RangeDrawer.DrawUI(indentedContentRect, rangeProp, _minLimit, currentMax, isFloat);
+                Vector2RangeDrawer.DrawUI(indentedContentRect, rangeProp, minLimit, currentMaxLimit, isFloat);
             }
             else
             {
-                DrawSingleSlider(indentedContentRect, valueProp, _minLimit, currentMax, isFloat);
+                if (isFloat)
+                {
+                    valueProp.floatValue = EditorGUI.Slider(indentedContentRect, valueProp.floatValue, minLimit, currentMaxLimit);
+                }
+                else
+                {
+                    valueProp.floatValue = EditorGUI.IntSlider(indentedContentRect, Mathf.RoundToInt(valueProp.floatValue), (int)minLimit, (int)currentMaxLimit);
+                }
             }
 
             EditorGUI.EndProperty();
         }
 
         // ── Private Helpers ───────────────────────────────────────────────
-        private void DrawSingleSlider(Rect rect, SerializedProperty valueProp, float min, float max, bool isFloat)
+        private static float GetDynamicMax(SerializedProperty property, float defaultMax, float minLimit, DynamicRangeAttribute attr)
         {
-            if (isFloat)
-            {
-                valueProp.floatValue = EditorGUI.Slider(rect, valueProp.floatValue, min, max);
-            }
-            else
-            {
-                valueProp.intValue = EditorGUI.IntSlider(rect, valueProp.intValue, (int)min, (int)max);
-            }
-        }
-
-        private void InitializeAttributeData()
-        {
-            if (_isInitialized) return;
-            _isInitialized = true;
-
-            if (fieldInfo == null) return;
-
-            var attributes = fieldInfo.GetCustomAttributes(typeof(DynamicRangeAttribute), true);
-            if (attributes.Length > 0 && attributes[0] is DynamicRangeAttribute attr)
-            {
-                _rangeAttr = attr;
-                _minLimit = attr.Min;
-                _maxLimit = attr.Max;
-            }
-        }
-
-        private float GetDynamicMax(SerializedProperty property, float defaultMax)
-        {
-            if (_rangeAttr == null || string.IsNullOrEmpty(_rangeAttr.DynamicMaxList))
+            if (attr == null || string.IsNullOrEmpty(attr.DynamicMaxList))
                 return defaultMax;
 
             int lastDotIndex = property.propertyPath.LastIndexOf('.');
             string parentPath = lastDotIndex == -1 ? "" : property.propertyPath[..lastDotIndex] + ".";
-            string listPath = $"{parentPath}{_rangeAttr.DynamicMaxList}";
+            string listPath = $"{parentPath}{attr.DynamicMaxList}";
 
             var listProp = property.serializedObject.FindProperty(listPath);
             if (listProp != null && listProp.isArray)
             {
-                return Mathf.Max(_minLimit, listProp.arraySize - 1);
+                return Mathf.Max(minLimit, listProp.arraySize - 1);
             }
 
             return defaultMax;

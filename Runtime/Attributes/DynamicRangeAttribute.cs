@@ -15,6 +15,8 @@ namespace Deepwave.Core
         public float Max;
         /// <summary>Optional property name containing a collection of values to derive a dynamic maximum from.</summary>
         public string DynamicMaxList;
+        /// <summary>Whether this range represents integer values.</summary>
+        public bool IsInteger;
 
         // ── Constructors ─────────────────────────────────────────────────
         /// <summary>Defines a fixed range with specific min and max values.</summary>
@@ -23,6 +25,15 @@ namespace Deepwave.Core
             Min = min;
             Max = max;
             DynamicMaxList = null;
+            IsInteger = false;
+        }
+
+        public DynamicRangeAttribute(int min, int max)
+        {
+            Min = min;
+            Max = max;
+            DynamicMaxList = null;
+            IsInteger = true;
         }
 
         /// <summary>Defines a range where the maximum value depends on another collection's size.</summary>
@@ -31,6 +42,15 @@ namespace Deepwave.Core
             Min = min;
             Max = 1f;
             DynamicMaxList = dynamicMaxList;
+            IsInteger = false;
+        }
+
+        public DynamicRangeAttribute(int min, string dynamicMaxList)
+        {
+            Min = min;
+            Max = 1f;
+            DynamicMaxList = dynamicMaxList;
+            IsInteger = true;
         }
     }
 }
