@@ -77,17 +77,20 @@ jobs:
             exit 0
           fi
           
+          # Lấy tag gần nhất trên nhánh upm TRƯỚC KHI tạo tag mới
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 upm 2>/dev/null || echo "")
+          
           git tag $TAG upm
           git push origin $TAG
 
-          # --- LOGIC LỌC VÀ ĐỊNH DẠNG CHANGELOG ---
-          PREVIOUS_TAG=$(git describe --tags --abbrev=0 $TAG^ 2>/dev/null || echo "")
-          RANGE=$([ -z "$PREVIOUS_TAG" ] && echo "main" || echo "$PREVIOUS_TAG..main")
+          # So sánh log trên chính nhánh upm thay vì main để tránh sai lệch lịch sử subtree
+          RANGE=$([ -z "$PREVIOUS_TAG" ] && echo "upm" || echo "$PREVIOUS_TAG..upm")
 
           format_log() {
             local prefix=$1
             local title=$2
-            local logs=$(git log $RANGE --pretty=format:"* %s (%h)" -- Assets/Deepwave/WaveCore | \
+            # Bỏ path filter vì upm branch đã là root của package
+            local logs=$(git log $RANGE --pretty=format:"* %s (%h)" | \
                          grep -iE "^\* $prefix:" | \
                          sed -E "s/^\* $prefix:[[:space:]]*/- /I")
             
@@ -106,7 +109,7 @@ jobs:
           BODY+="$(format_log "docs" "Documentation")"$'\n'
           BODY+="$(format_log "chore" "Maintenance")"$'\n'
 
-          if [ -z "$BODY" ]; then
+          if [ -z "$BODY" ] || [ "$BODY" == $'\n\n\n\n\n\n\n\n' ]; then
             BODY="* No significant changes listed."
           fi
 
