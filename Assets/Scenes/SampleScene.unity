@@ -462,30 +462,32 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Deepwave.Core.Tests.DynamicRangeTester
   staticFloatRange:
-    randomize: 0
-    value: 0
-    range:
-      min: -5
+    _randomize: 1
+    _value: -0.23
+    _range:
+      min: 2.43
       max: 5
   staticIntRange:
-    randomize: 1
-    value: 1
-    range:
+    _randomize: 1
+    _value: 1
+    _range:
       min: 6
-      max: 8
+      max: 10
   referenceList:
   - Item 1
   - Item 2
   - Item 3
+  - Item 3
+  - Item 3
   dynamicListLimit:
-    randomize: 1
-    value: 0
-    range:
+    _randomize: 0
+    _value: 1
+    _range:
       min: 0
       max: 1
   genericFloatRange:
-    min: 0.2
-    max: 1
+    min: 0
+    max: 0.21
   genericIntRange:
     min: 0
     max: 1
