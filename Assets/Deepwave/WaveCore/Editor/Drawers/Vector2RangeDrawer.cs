@@ -5,11 +5,10 @@ using UnityEngine;
 namespace Deepwave.Core.Editor
 {
     /// <summary>
-    /// Custom PropertyDrawer for Vector2Range and Vector2IntRange.
+    /// Custom PropertyDrawer for Vector2Range.
     /// Provides a min/max slider interface for editing range values.
     /// </summary>
     [CustomPropertyDrawer(typeof(Vector2Range))]
-    [CustomPropertyDrawer(typeof(Vector2IntRange))]
     public sealed class Vector2RangeDrawer : PropertyDrawer
     {
         // ── PropertyDrawer Overrides ──────────────────────────────────────
@@ -19,20 +18,28 @@ namespace Deepwave.Core.Editor
 
             position = EditorGUI.PrefixLabel(position, GUIUtility.GetControlID(FocusType.Passive), label);
 
-            float minLimit = 0f;
-            float maxLimit = 1f;
+            SerializedProperty isIntegerProp = property.FindPropertyRelative("_isInteger");
+            SerializedProperty minLimitProp = property.FindPropertyRelative("_minLimit");
+            SerializedProperty maxLimitProp = property.FindPropertyRelative("_maxLimit");
+
+            // Base limits from the struct itself
+            float minLimit = minLimitProp != null ? minLimitProp.floatValue : 0f;
+            float maxLimit = maxLimitProp != null ? maxLimitProp.floatValue : 100f;
+            bool isFloat = isIntegerProp == null || !isIntegerProp.boolValue;
 
             if (fieldInfo != null)
             {
                 var attrs = fieldInfo.GetCustomAttributes(typeof(DynamicRangeAttribute), true);
                 if (attrs.Length > 0 && attrs[0] is DynamicRangeAttribute rangeAttr)
                 {
+                    // Attribute explicitly overrides internal struct limits
                     minLimit = rangeAttr.Min;
                     maxLimit = GetDynamicMax(property, rangeAttr.Max, rangeAttr);
+                    isFloat = !rangeAttr.IsInteger;
                 }
             }
 
-            bool isFloat = property.type == nameof(Vector2Range) || property.type == "Vector2Range";
+            // Note: DynamicValueDrawer uses this to draw the slider for the unified DynamicValue type.
             DrawUI(position, property, minLimit, maxLimit, isFloat);
 
             EditorGUI.EndProperty();
@@ -70,22 +77,20 @@ namespace Deepwave.Core.Editor
             }
             else
             {
-                int minVal = minProp.intValue;
-                int maxVal = maxProp.intValue;
+                int minVal = Mathf.RoundToInt(minProp.floatValue);
+                int maxVal = Mathf.RoundToInt(maxProp.floatValue);
 
                 minVal = EditorGUI.IntField(minRect, minVal);
 
-                float minFloat = minVal;
-                float maxFloat = maxVal;
-                EditorGUI.MinMaxSlider(sliderRect, ref minFloat, ref maxFloat, minLimit, maxLimit);
+                var (fMin, fMax) = ((float)minVal, (float)maxVal);
+                EditorGUI.MinMaxSlider(sliderRect, ref fMin, ref fMax, minLimit, maxLimit);
 
-                maxVal = EditorGUI.IntField(maxRect, Mathf.RoundToInt(maxFloat));
-
-                minVal = Mathf.Clamp(Mathf.RoundToInt(minFloat), (int)minLimit, maxVal);
+                maxVal = EditorGUI.IntField(maxRect, Mathf.RoundToInt(fMax));
+                minVal = Mathf.Clamp(Mathf.RoundToInt(fMin), (int)minLimit, maxVal);
                 maxVal = Mathf.Clamp(maxVal, minVal, (int)maxLimit);
 
-                minProp.intValue = minVal;
-                maxProp.intValue = maxVal;
+                minProp.floatValue = minVal;
+                maxProp.floatValue = maxVal;
             }
         }
 
