@@ -25,8 +25,8 @@ Provides safe and efficient Singleton implementations:
 - `SingletonBehaviour<T>`: Singleton pattern specifically for Unity `MonoBehaviour` components.
 
 ### 3. Dynamic Types
-Flexible data structures that allow switching between fixed values and randomized ranges:
-- `DynamicValue`: A struct containing a fixed value and a `Vector2Range`. Use `.Evaluate()` to retrieve either the fixed value or a random value within the range. Handles both float and integer use cases.
+Flexible data structures that allow switching between fixed values or dynamic evaluations (Curve * Random Range):
+- `DynamicValue`: A struct that can be toggled to `Dynamic` mode. Use `.Evaluate(t)` to retrieve the value. In dynamic mode, it multiplies the evaluation of an `AnimationCurve` by a random value from a specified range.
 
 ### 4. Math Utilities (`MathUtils`)
 An extensive math library with useful functions:
@@ -42,7 +42,7 @@ An extensive math library with useful functions:
 
 ## 🛠 Usage Examples
 
-### Using Custom Inspector Header
+### Using DynamicValue
 ```csharp
 using Deepwave.Core;
 using UnityEngine;
@@ -57,8 +57,9 @@ public class PlayerController : MonoBehaviour
 
     void Update() 
     {
-        // Automatically returns a random value if 'randomize' is checked in the Inspector
-        float currentForce = jumpForce.Evaluate();
+        // Returns the fixed value if Dynamic is off.
+        // Returns (Curve * RandomRange) if Dynamic is on.
+        float currentForce = jumpForce.Evaluate(Time.time % 1f);
     }
 }
 ```
