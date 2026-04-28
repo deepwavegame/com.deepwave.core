@@ -30,7 +30,7 @@ namespace Deepwave.Core.Editor
             }
 
             float minLimit = rangeAttr.Min;
-            float maxLimit = GetDynamicMax(property, rangeAttr.Max, rangeAttr);
+            float maxLimit = PropertyUtility.GetDynamicMax(property, rangeAttr.Max, rangeAttr);
 
             switch (property.propertyType)
             {
@@ -44,27 +44,6 @@ namespace Deepwave.Core.Editor
                     EditorGUI.PropertyField(position, property, label, true);
                     break;
             }
-        }
-
-        // ── Private Helpers ───────────────────────────────────────────────
-        private float GetDynamicMax(SerializedProperty property, float defaultMax, DynamicRangeAttribute attr)
-        {
-            if (attr == null || string.IsNullOrEmpty(attr.DynamicMaxList))
-                return defaultMax;
-
-            int lastDotIndex = property.propertyPath.LastIndexOf('.');
-            string parentPath = lastDotIndex == -1 ? "" : property.propertyPath[..lastDotIndex] + ".";
-            string listPath = $"{parentPath}{attr.DynamicMaxList}";
-
-            var listProp = property.serializedObject.FindProperty(listPath);
-            if (listProp != null && listProp.isArray)
-            {
-                // Subtract 1 to treat as index count (standard for core logic) or use arraySize as is?
-                // The current DynamicValueDrawer uses arraySize - 1.
-                return Mathf.Max(attr.Min, listProp.arraySize - 1);
-            }
-
-            return defaultMax;
         }
     }
 }

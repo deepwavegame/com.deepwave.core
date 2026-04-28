@@ -9,7 +9,7 @@ namespace Deepwave.Core.Tests
         [DynamicRange(0f, 10f)]
         public Vector2Range genericFloatRange = new(0f, 10f);
 
-        [DynamicRange(0, 10)]
+        [DynamicRange(0, 15)]
         public Vector2Range genericIntRange = new(0, 5);
 
         [Header("Static Range Attributes")]

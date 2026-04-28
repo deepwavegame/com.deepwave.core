@@ -34,7 +34,7 @@ namespace Deepwave.Core.Editor
                 {
                     // Attribute explicitly overrides internal struct limits
                     minLimit = rangeAttr.Min;
-                    maxLimit = GetDynamicMax(property, rangeAttr.Max, rangeAttr);
+                    maxLimit = PropertyUtility.GetDynamicMax(property, rangeAttr.Max, rangeAttr);
                     isFloat = !rangeAttr.IsInteger;
                 }
             }
@@ -95,22 +95,5 @@ namespace Deepwave.Core.Editor
         }
 
         // ── Private Helpers ───────────────────────────────────────────────
-        private static float GetDynamicMax(SerializedProperty property, float defaultMax, DynamicRangeAttribute attr)
-        {
-            if (attr == null || string.IsNullOrEmpty(attr.DynamicMaxList))
-                return defaultMax;
-
-            int lastDotIndex = property.propertyPath.LastIndexOf('.');
-            string parentPath = lastDotIndex == -1 ? "" : property.propertyPath[..lastDotIndex] + ".";
-            string listPath = $"{parentPath}{attr.DynamicMaxList}";
-
-            var listProp = property.serializedObject.FindProperty(listPath);
-            if (listProp != null && listProp.isArray)
-            {
-                return Mathf.Max(attr.Min, listProp.arraySize - 1);
-            }
-
-            return defaultMax;
-        }
     }
 }

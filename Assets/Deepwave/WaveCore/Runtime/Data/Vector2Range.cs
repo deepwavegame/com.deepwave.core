@@ -16,27 +16,32 @@ namespace Deepwave.Core
         /// <summary>Maximum value of the range.</summary>
         public float max;
 
-        [SerializeField] private float _minLimit;
-        [SerializeField] private float _maxLimit;
-        [SerializeField] private bool _isInteger;
+        [SerializeField]
+        private float _minLimit;
+
+        [SerializeField]
+        private float _maxLimit;
+
+        [SerializeField]
+        private bool _isInteger;
 
         // ── Constructors ──────────────────────────────────────────────────
-        public Vector2Range(float min, float max)
+        public Vector2Range(float min, float max, float minLimit = 0f, float maxLimit = 1f)
         {
+            _isInteger = false;
             this.min = min;
             this.max = max;
-            _minLimit = min;
-            _maxLimit = max;
-            _isInteger = false;
+            _minLimit = minLimit;
+            _maxLimit = maxLimit;
         }
 
-        public Vector2Range(int min, int max)
+        public Vector2Range(int min, int max, int minLimit = 0, int maxLimit = 10)
         {
+            _isInteger = true;
             this.min = min;
             this.max = max;
-            _minLimit = min;
-            _maxLimit = max;
-            _isInteger = true;
+            _minLimit = minLimit;
+            _maxLimit = maxLimit;
         }
     }
 }
