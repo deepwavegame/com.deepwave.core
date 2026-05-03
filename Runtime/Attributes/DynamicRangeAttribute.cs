@@ -6,7 +6,7 @@ namespace Deepwave.Core
     /// Use this attribute on a float or DynamicFloat field to visualize it with a min/max slider in the Inspector.
     /// Supports dynamic adjustment of the maximum value if a list name is provided.
     /// </summary>
-    public sealed class DynamicRangeAttribute : PropertyAttribute
+    public sealed class DynamicRangeAttribute: PropertyAttribute
     {
         // ── Public Fields ─────────────────────────────────────────────────
         /// <summary>Lower bound of the range.</summary>
@@ -17,6 +17,8 @@ namespace Deepwave.Core
         public string DynamicMaxList;
         /// <summary>Whether this range represents integer values.</summary>
         public bool IsInteger;
+        /// <summary>Whether the dynamic maximum should be squared (e.g., for GridSize * GridSize).</summary>
+        public bool Squared;
 
         // ── Constructors ─────────────────────────────────────────────────
         /// <summary>Defines a fixed range with specific min and max values.</summary>
